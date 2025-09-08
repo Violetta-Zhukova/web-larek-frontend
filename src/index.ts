@@ -52,6 +52,13 @@ const cardPreview = new CardPreview(cloneTemplate(cardPreviewTemplate), {
 	},
 });
 
+const success = new SuccessOrder(cloneTemplate(successTemplate), {
+	onClick: () => {
+		modal.close();
+		events.emit('order.success');
+	},
+});
+
 // Изменились элементы каталога
 events.on('catalog:changed', () => {
 	const itemsList = catalogData.getCatalog().map((item) => {
@@ -84,8 +91,6 @@ events.on('basket:open', () => {
 	modal.render({
 		content: basket.render(),
 	});
-
-	page.counter = basketData.getTotalAmount();
 });
 
 events.on('basket:delete', (item: IItem) => {
@@ -108,11 +113,10 @@ events.on('card:select', (item: IItem) => {
 events.on('card:buy', () => {
 	if (basketData.isInBasket(cardPreview.id)) {
 		basketData.deleteItem(cardPreview.id);
-		cardPreview.buttonText = basketData.isInBasket(cardPreview.id);
 	} else {
 		basketData.addItem(catalogData.getItem());
-		cardPreview.buttonText = basketData.isInBasket(cardPreview.id);
 	}
+	cardPreview.buttonText = basketData.isInBasket(cardPreview.id);
 });
 
 // Переход к странице оформления заказа
@@ -195,18 +199,10 @@ events.on('contacts:submit', () => {
 			items: itemsList,
 		})
 		.then((result) => {
-			const success = new SuccessOrder(cloneTemplate(successTemplate), {
-				onClick: () => {
-					modal.close();
-					basketData.clearBasket();
-					customerData.clearCustomerData();
-					events.emit('catalog:changed');
-				},
-			});
 			modal.render({ content: success.render({ text: result.total }) });
 			basketData.clearBasket();
 			customerData.clearCustomerData();
-			events.emit('catalog:changed');
+			events.emit('order.success');
 		})
 		.catch((err) => {
 			console.log(err);
